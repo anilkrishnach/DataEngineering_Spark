@@ -46,7 +46,7 @@ def process_song_data(spark, input_path, output_path):
     
     # Extract columns to create artists table
     artists_output_path = output_path+"artists_table"
-    df_artists = df.select(['artist_id', 'title', 'artist_location', 'artist_latitude', 'artist_longitude']).drop_duplicates()
+    df_artists = df.select(['artist_id', 'title', 'artist_location', 'artist_latitude', 'artist_longitude']).drop_duplicates(['artist_id'])
     print('Extracted columns for artists table.')
     
     # Write artists table to parquet files
@@ -83,7 +83,7 @@ def process_log_data(spark, input_path, output_path):
     
     # write users table to parquet files
     users_output_path = output_path+"users_table"
-    df_users_with_level.drop_duplicates().write.mode('overwrite').parquet(users_output_path)
+    df_users_with_level.drop_duplicates(['userId']).write.mode('overwrite').parquet(users_output_path)
     print(f'Stored the parquet file in {users_output_path}')    
 
     # create timestamp column from original timestamp column
@@ -112,7 +112,7 @@ def process_log_data(spark, input_path, output_path):
     # extract columns to create time table  
     df_time_table = df.select('ts').withColumn('hour',gethour(df.ts)).withColumn('day',getday(df.ts))
     .withColumn('week',getweek(df.ts)).withColumn('month',getmonth(df.ts))
-    .withColumn('year',getyear(df.ts)).withColumn('weekday',getweek(df.ts)).drop_duplicates()
+    .withColumn('year',getyear(df.ts)).withColumn('weekday',getweek(df.ts)).drop_duplicates(['ts'])
     print("Extracted columns for time table.")
 
     # write time table to parquet files partitioned by year and month
