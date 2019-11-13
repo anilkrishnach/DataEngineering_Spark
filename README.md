@@ -27,3 +27,7 @@ This repository has one script.
 
 #### Log Data - 
 ![Image of Log JSON Data](/images/log_json.png)  
+
+The above tables are loaded into a star schema. 
+#### Star Schema -
+![Image of Star Schema](/images/star_schema.png)  
