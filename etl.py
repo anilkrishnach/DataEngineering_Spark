@@ -36,7 +36,7 @@ def process_song_data(spark, input_path, output_path):
     print('Data read from Song_data and created song_data view.')
     
     # Extract columns to create songs table
-    df_songs = df.select(['song_id', 'title', 'artist_id', 'year', 'duration'])
+    df_songs = df.select(['song_id', 'title', 'artist_id', 'year', 'duration']).drop_duplicates()
     print('Extracted columns for songs table.')
     
     # Write songs table to parquet files partitioned by year and artist
@@ -46,7 +46,7 @@ def process_song_data(spark, input_path, output_path):
     
     # Extract columns to create artists table
     artists_output_path = output_path+"artists_table"
-    df_artists = df.select(['artist_id', 'title', 'artist_location', 'artist_latitude', 'artist_longitude'])
+    df_artists = df.select(['artist_id', 'title', 'artist_location', 'artist_latitude', 'artist_longitude']).drop_duplicates()
     print('Extracted columns for artists table.')
     
     # Write artists table to parquet files
@@ -83,7 +83,7 @@ def process_log_data(spark, input_path, output_path):
     
     # write users table to parquet files
     users_output_path = output_path+"users_table"
-    df_users_with_level.write.mode('overwrite').parquet(users_output_path)
+    df_users_with_level.drop_duplicates().write.mode('overwrite').parquet(users_output_path)
     print(f'Stored the parquet file in {users_output_path}')    
 
     # create timestamp column from original timestamp column
@@ -110,7 +110,9 @@ def process_log_data(spark, input_path, output_path):
         return datetime.datetime.fromtimestamp(int(ts/1000)).strftime("%w")
 
     # extract columns to create time table  
-    df_time_table = df.select('ts').withColumn('hour',gethour(df.ts)).withColumn('day',getday(df.ts)).withColumn('week',getweek(df.ts)).withColumn('month',getmonth(df.ts)).withColumn('year',getyear(df.ts)).withColumn('weekday',getweek(df.ts))
+    df_time_table = df.select('ts').withColumn('hour',gethour(df.ts)).withColumn('day',getday(df.ts))
+    .withColumn('week',getweek(df.ts)).withColumn('month',getmonth(df.ts))
+    .withColumn('year',getyear(df.ts)).withColumn('weekday',getweek(df.ts)).drop_duplicates()
     print("Extracted columns for time table.")
 
     # write time table to parquet files partitioned by year and month
@@ -123,7 +125,11 @@ def process_log_data(spark, input_path, output_path):
     df_song_data = spark.table('song_data')
     
     # Extracting columns for Songplays table
-    df_songplays = df_log_data.join(df_song_data, on=[df_song_data.title == df_log_data.song, df_song_data.artist_name == df_log_data.artist], how='full').join(df_time_table, on=[df_time_table.ts == df_log_data.ts], how='full').withColumn('songplay_id', monotonically_increasing_id()).select(df_time_table.month, df_time_table.month, df_log_data.ts, df_log_data.userId, df_log_data.level, df_song_data.song_id, df_song_data.artist_id, df_log_data.sessionId, df_log_data.location, df_log_data.userAgent)
+    df_songplays = df_log_data.join(df_song_data, on=[df_song_data.title == df_log_data.song, df_song_data.artist_name == df_log_data.artist], how='full')
+    .join(df_time_table, on=[df_time_table.ts == df_log_data.ts], how='full').
+    withColumn('songplay_id', monotonically_increasing_id()).
+    select(df_time_table.month, df_time_table.year, df_log_data.ts, df_log_data.userId, df_log_data.level, df_song_data.song_id
+           , df_song_data.artist_id, df_log_data.sessionId, df_log_data.location, df_log_data.userAgent).drop_duplicates()
     print("Extracted data for Songplays table.")
     
     songplays_output_path = output_path+"songplays_table"
